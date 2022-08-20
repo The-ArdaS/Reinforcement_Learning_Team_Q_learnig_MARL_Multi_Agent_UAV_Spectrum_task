@@ -4,7 +4,7 @@
 #################################
 """
 
-Config_General = {'NUM_UAV': 2, 'NUM_EPS': 200, 'NUM_STEP': 30000, 'NUM_PKT': 1,
+Config_General = {'NUM_UAV': 3, 'NUM_EPS': 200, 'NUM_STEP': 30000, 'NUM_PKT': 1,
                   'Location_SaveFile': 1, 'CSI_SaveFile': 1, 'PlotLocation': 1, 'DF': 0, 'printFlag': 1,
                   'PlotResult': 0, 'NUM_RUN': 10}
 
