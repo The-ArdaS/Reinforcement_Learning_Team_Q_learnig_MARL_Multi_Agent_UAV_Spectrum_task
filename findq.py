@@ -47,8 +47,13 @@ def find_max_q_next(qval, next_state, x, y, action_list, size):
     taken_actions = []
     for action0 in left_action[0]:
         for action1 in left_action[1]:
-            left_states.append(qval[next_state[0], next_state[1], action0, action1])
-            taken_actions.append([action0, action1])
+            # left_states.append(qval[next_state[0], next_state[1], action0, action1])
+            # taken_actions.append([action0, action1])
+            for action2 in left_action[2]:
+                left_states.append(qval[next_state[0], next_state[1], next_state[2], action0, action1, action2])
+                taken_actions.append([action0, action1, action2])
+
+            
 
     maxqval = 0
     flag_greedy = True
