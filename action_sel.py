@@ -70,6 +70,25 @@ def action_explore(x, y, action_list, size, state_list, index):
     return chosen_action, x_new, y_new, state_list
 
 
+
+# from config import Config_General
+
+# NUM_UAV = Config_General['NUM_UAV']
+
+# def loop_rec(n, *args):
+#     i = NUM_UAV - n
+#     if n >= 1:
+#         for x in left_action[i]:
+#             loop_rec(n-1, x, args)
+#     else:
+#         list_states = [state_list[j] for j in range(NUM_UAV)]
+#         list_args   = list(args)
+#         qval_params = list_states + list_args
+#         left_states.append(qval[param for param in qval_params])
+#         taken_actions.append([param for param in list_args])
+
+
+
 def action_exploit(x, y, action_list, size, state_list, qval):
     """
     This function used the Q values to find the best and optimal action regarding the optimal Q values. Hence, the
@@ -87,8 +106,8 @@ def action_exploit(x, y, action_list, size, state_list, qval):
     y_new = [None] * len(y)
     chosen_action_greedy = -1
     new_state_list = []
-    left_action = [deepcopy(action_list) for _ in range(len(x))]
-    # 0: Up, 1: down, 2: Left, 3: Right, 4: Fusion, 5: Relay
+    left_action = [deepcopy(action_list) for _ in range(len(x))]  # 0: Up, 1: down, 2: Left, 3: Right, 4: Fusion, 5: Relay
+
     for uav in np.arange(len(x)):
         if x[uav] == 0:
             left_action[uav].remove(2)
@@ -103,8 +122,11 @@ def action_exploit(x, y, action_list, size, state_list, qval):
     taken_actions = []
     for action0 in left_action[0]:
         for action1 in left_action[1]:
-            left_states.append(qval[state_list[0], state_list[1], action0, action1])
-            taken_actions.append([action0, action1])
+            # left_states.append(qval[state_list[0], state_list[1], action0, action1])
+            # taken_actions.append([action0, action1])
+            for action2 in left_action[2]:
+                left_states.append(qval[state_list[0], state_list[1], state_list[2], action0, action1, action2])
+                taken_actions.append([action0, action1, action2])
 
     flag_greedy = True
     while flag_greedy:
