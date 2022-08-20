@@ -10,6 +10,7 @@ from random import seed
 import numpy as np
 import scipy.io as sio
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 #########################################################
 # Function definition
@@ -88,7 +89,10 @@ def location(num_UAV, Height, Length, Width, UAV_L_MAX,
 
     if Plot:
         fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
+        # ax = fig.add_subplot(111, projection='3d')
+        ax = fig.add_subplot(111, projection=Axes3D.name)
+
+        
         ax.plot(np.squeeze([X_S, X_F]), np.squeeze([Y_S, Y_F]), np.squeeze([Z_S, Z_F]), 'ro', markersize=12)
         # ax.axis([X_S - 10, 10 + X_F, 0-10, Width + 10, 0 - 10, Height + 10])
         ax.set_xlim(X_S - 10, 10 + X_F)
@@ -111,3 +115,4 @@ def location(num_UAV, Height, Length, Width, UAV_L_MAX,
 
         plt.show(block=False)
     return return_dict
+  
