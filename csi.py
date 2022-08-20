@@ -8,12 +8,8 @@ import scipy.spatial.distance as ssd
 import numpy as np
 import scipy.io as sio
 
-#########################################################
-# Function definition
 
-###############################
 # Load CSI
-
 
 def load_csi(num_UAV, location, pthH, SaveFile):
     """
@@ -88,9 +84,8 @@ def load_csi(num_UAV, location, pthH, SaveFile):
         csi_h = csi_h_dict.get('csi_h')
     return csi_h
 
-###############################
-# GET CSI
 
+# GET CSI
 
 def get_csi(num_UAV, location, x_u, y_u):
     """
@@ -137,10 +132,17 @@ def get_csi(num_UAV, location, x_u, y_u):
     dist_uav_GR = [ssd.euclidean([X_GR, Y_GR, Z_GR], [i, j, k]) for i, j, k in zip(X_U, Y_U, Z_U)]
     dist_uav_GR = np.asarray(dist_uav_GR)
 
-    dist_S_uav_Norm = dist_S_uav
-    dist_uav_F_Norm = dist_uav_F
-    dist_GT_uav_Norm = dist_GT_uav
-    dist_uav_GR_Norm = dist_uav_GR
+
+    # dist_S_uav_Norm =  dist_S_uav
+    # dist_uav_F_Norm =  dist_uav_F
+    # dist_GT_uav_Norm = dist_GT_uav
+    # dist_uav_GR_Norm = dist_uav_GR
+
+    dist_S_uav_Norm =  np.linalg.norm(dist_S_uav)
+    dist_uav_F_Norm =  np.linalg.norm(dist_uav_F)
+    dist_GT_uav_Norm = np.linalg.norm(dist_GT_uav)
+    dist_uav_GR_Norm = np.linalg.norm(dist_uav_GR)
+    
 
     h_S_uav = np.multiply(1 / (dist_S_uav_Norm ** 2), (np.ones([num_UAV, 1]) + 1j * np.ones([num_UAV, 1])).T)
     h_S_uav = h_S_uav.T
