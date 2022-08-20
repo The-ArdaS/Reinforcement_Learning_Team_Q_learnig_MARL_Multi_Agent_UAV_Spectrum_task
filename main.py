@@ -11,12 +11,7 @@ This project is developed and tested with Python 2.7 using pycharm on Windows 10
 
 #########################################################
 # import libraries
-from config import Size
-from config import Config_Dim as Dim
-from config import Config_General as General
-from config import Config_Param as Param
-from config import Config_Power as Power
-from config import Config_Path
+from config import Size, Config_Dim as Dim, Config_General as General, Config_Param as Param, Config_Power as Power, Config_Path
 import location_gen as loc
 import csi as csi_module
 import numpy as np
@@ -26,8 +21,7 @@ import jain_index as jain_func
 from gain_util_jain import reward_val
 import matplotlib.pyplot as plt
 from statefromloc import getstateloc
-from action_sel import action_explore
-from action_sel import action_exploit
+from action_sel import action_explore, action_exploit
 from csi import get_csi
 from findq import find_max_q_next
 from copy import deepcopy
@@ -50,12 +44,11 @@ num_Run = General.get('NUM_RUN')
 pathDist = Config_Path.get('PathDist')
 pathH = Config_Path.get('PathH')
 
-location_init = \
-    loc.location(num_UAV,
-                 Dim.get('Height'), Dim.get('Length'), Dim.get('Width'),
-                 Dim.get('UAV_L_MAX'), Dim.get('UAV_L_MIN'),
-                 Dim.get('UAV_W_MAX'), Dim.get('UAV_W_MIN'), pathDist,
-                 General.get('Location_SaveFile'), General.get('PlotLocation'), Dim.get('Divider'))
+location_init = loc.location(num_UAV,
+                             Dim.get('Height'), Dim.get('Length'), Dim.get('Width'),
+                             Dim.get('UAV_L_MAX'), Dim.get('UAV_L_MIN'),
+                             Dim.get('UAV_W_MAX'), Dim.get('UAV_W_MIN'), pathDist,
+                             General.get('Location_SaveFile'), General.get('PlotLocation'), Dim.get('Divider'))
 
 loc_dict = location_init
 Length = Dim.get('Length')
@@ -112,10 +105,18 @@ for Run in range(0, num_Run):
     seed(a=None)
     #########################################################
     # Main Function of the Simulation
-    qVal = np.zeros([num_states, num_states, num_action, num_action])
+
+    # qVal = np.zeros([num_states, num_states, num_action, num_action])
+
+    qVal_dim = []
+    qVal_dim += [num_states for _ in range(num_UAV)]
+    qVal_dim += [num_action for _ in range(num_UAV)]
+    qVal = np.zeros(qVal_dim)
+
+
     timer = 0
     for Eps in range(0, num_Eps):
-        timer = time.clock()
+        timer = time.perf_counter()
         number_meet = np.zeros(num_UAV * [num_states], dtype=int)
         X_U = loc_dict.get('X_U')
         Y_U = loc_dict.get('Y_U')
@@ -138,8 +139,7 @@ for Run in range(0, num_Run):
                 # Exploration
                 perm_UAV_list = np.arange(num_UAV)
                 for UAV in np.random.permutation(perm_UAV_list):
-                    action[Step, Eps, UAV], X_U[UAV], Y_U[UAV], state_new = \
-                        action_explore(X_U[UAV], Y_U[UAV], action_list, Size, exploration_current_state, UAV)
+                    action[Step, Eps, UAV], X_U[UAV], Y_U[UAV], state_new = action_explore(X_U[UAV], Y_U[UAV], action_list, Size, exploration_current_state, UAV)
                     # State_Mat[Step, Eps, UAV] = state_new[UAV]
                     if action[Step, Eps, UAV] == 4 or action[Step, Eps, UAV] == 5:
                         task_matrix[Step, Eps, UAV] = action[Step, Eps, UAV] - 4
@@ -149,8 +149,7 @@ for Run in range(0, num_Run):
             else:
                 ###################
                 # Exploitation
-                action[Step, Eps, :], X_U, Y_U, state_new = \
-                    action_exploit(X_U, Y_U, action_list, Size, state_index, qVal)
+                action[Step, Eps, :], X_U, Y_U, state_new = action_exploit(X_U, Y_U, action_list, Size, state_index, qVal)
                 for UAV in np.arange(num_UAV):
                     if action[Step, Eps, UAV] == 4 or action[Step, Eps, UAV] == 5:
                         task_matrix[Step, Eps, UAV] = action[Step, Eps, UAV] - 4
@@ -217,7 +216,7 @@ for Run in range(0, num_Run):
             # ********************************
             # End of the Each Step
 
-        print (" -------Run = %d ----- Epoch = %d ----------------- Duration = %f " % (Run, Eps, time.clock() - timer))
+        print (" -------Run = %d ----- Epoch = %d ----------------- Duration = %f " % (Run, Eps, time.perf_counter() - timer))
         # ********************************
         # End of the Each Episode
 
@@ -263,10 +262,11 @@ for Run in range(0, num_Run):
             plt.show(block=False)
 
     outputFile = '\data\Out_greedy_Size_%d_Run_%d_Eps_%d_Step_%d.npz' % (Size, Run, num_Eps, num_Step)  # Windows
-    # outputFile = '/data/Out_greedy_Size_%d_Run_%d_Eps_%d_Step_%d.npz' % (Size, Run, num_Eps, num_Step)  # Linux
+
     np.savez(outputFile, u_primary=u_primary, u_fusion=u_fusion, sum_utility=sum_utility, reward=reward, num_F=num_F,
              num_R=num_R, X_Mat=X_Mat, Y_Mat=Y_Mat, State_Mat=State_Mat, action=action, task_matrix=task_matrix,
              next_state_index=next_state_index, task_diff=task_diff, qVal=qVal)
+    
     # End of the Each Run
 
 seed(1)
