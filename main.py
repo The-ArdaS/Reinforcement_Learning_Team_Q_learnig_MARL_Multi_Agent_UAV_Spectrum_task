@@ -1,14 +1,3 @@
-"""
-Created on March 14, 2019
-@author: Alireza Shamsoshoara
-@Project: Team Q Learning Reinforcement Learning
-          A solution for dynamic spectrum management in mission-critical UAV networks
-          Paper: https://ieeexplore.ieee.org/abstract/document/8824917
-          Arxiv: https://arxiv.org/abs/1904.07380
-@Northern Arizona University
-This project is developed and tested with Python 2.7 using pycharm on Windows 10
-"""
-
 #########################################################
 # import libraries
 from config import Size, Config_Dim as Dim, Config_General as General, Config_Param as Param, Config_Power as Power, Config_Path
@@ -27,6 +16,13 @@ from findq import find_max_q_next
 from copy import deepcopy
 from random import seed
 import time
+
+
+SEED = 0
+np.random.seed(SEED)
+seed(a=SEED)
+# seed(a=None)
+
 
 #########################################################
 # General Flags
@@ -98,11 +94,15 @@ for Run in range(0, num_Run):
     next_state_index = np.zeros([num_Step, num_Eps, num_UAV], dtype=int)
 
     action = np.zeros([num_Step, num_Eps, num_UAV], dtype=int)
+    
     task_matrix = np.zeros([num_Step, num_Eps, num_UAV], dtype=int)
     prev_task = np.zeros([num_Step, num_Eps, num_UAV], dtype=int)
     task_diff = np.zeros([num_Step, num_Eps], dtype=int)
+    
+    move_matrix = np.zeros([num_Step, num_Eps, num_UAV], dtype=int)
+    prev_move = np.zeros([num_Step, num_Eps, num_UAV], dtype=int)
+    move_diff = np.zeros([num_Step, num_Eps], dtype=int)
 
-    seed(a=None)
     #########################################################
     # Main Function of the Simulation
 
@@ -133,9 +133,9 @@ for Run in range(0, num_Run):
 
             if Step > 0:
                 prev_task[Step, Eps, :] = task_matrix[Step-1, Eps, :].copy(order='C')
+                prev_move[Step, Eps, :] = move_matrix[Step-1, Eps, :].copy(order='C')
 
             if np.random.rand() < epsilon:
-                ###################
                 # Exploration
                 perm_UAV_list = np.arange(num_UAV)
                 for UAV in np.random.permutation(perm_UAV_list):
@@ -143,21 +143,26 @@ for Run in range(0, num_Run):
                     # State_Mat[Step, Eps, UAV] = state_new[UAV]
                     if action[Step, Eps, UAV] == 4 or action[Step, Eps, UAV] == 5:
                         task_matrix[Step, Eps, UAV] = action[Step, Eps, UAV] - 4
+                        move_matrix[Step, Eps, UAV] = move_matrix[Step-1, Eps, UAV]
                     else:
                         if Step > 0:
                             task_matrix[Step, Eps, UAV] = task_matrix[Step-1, Eps, UAV]
+                            move_matrix[Step, Eps, UAV] = action[Step, Eps, UAV]  # TODO: check: this is not 0-1 like task_matrix.
+                            
             else:
-                ###################
                 # Exploitation
                 action[Step, Eps, :], X_U, Y_U, state_new = action_exploit(X_U, Y_U, action_list, Size, state_index, qVal)
                 for UAV in np.arange(num_UAV):
                     if action[Step, Eps, UAV] == 4 or action[Step, Eps, UAV] == 5:
                         task_matrix[Step, Eps, UAV] = action[Step, Eps, UAV] - 4
+                        move_matrix[Step, Eps, UAV] = move_matrix[Step-1, Eps, UAV]
                     else:
                         if Step > 0:
                             task_matrix[Step, Eps, UAV] = task_matrix[Step-1, Eps, UAV]
+                            move_matrix[Step, Eps, UAV] = action[Step, Eps, UAV]  # TODO: check: this is not 0-1 like task_matrix.
 
             task_diff[Step, Eps] = np.sum(np.not_equal(task_matrix[Step, Eps, :], prev_task[Step, Eps, :]))
+            move_diff[Step, Eps] = np.sum(np.not_equal(move_matrix[Step, Eps, :], prev_move[Step, Eps, :]))
 
             if Flag_Print:
                 print(" Current State = ", state_index[0], state_index[1])
@@ -221,45 +226,41 @@ for Run in range(0, num_Run):
         # End of the Each Episode
 
     if General.get('PlotResult'):
-        if num_Eps > 1:
-            plt.figure()
-            plt.plot(range(0, num_Eps), np.sum(sum_utility, axis=0), markersize='10', color='blue')
-            plt.grid(True)
-            plt.ylabel('Sum Utility')
-            plt.xlabel('Episodes')
-            plt.show(block=False)
-        else:
-            plt.figure()
-            plt.plot(range(0, num_Step), np.mean(reward, axis=1), markersize='10', color='blue')
-            plt.grid(True)
-            plt.ylabel('reward')
-            plt.xlabel('Steps')
-            plt.savefig('first.png')
-            plt.show(block=False)
+        
+        # plt.figure()
+        fig, ax1 = plt.subplots()
+        color = 'tab:green'
+        ax1.set_xlabel('Episodes')
+        ax1.set_ylabel('Total and Emergency Throughput', color=color)
+        ax1.plot(range(0, num_Eps), np.sum(sum_utility, axis=0), markersize='10', color='blue')
+        ax1.plot(range(0, num_Eps), np.mean(u_fusion, axis=1), markersize='10', color='black')
+        ax1.tick_params(axis='y', labelcolor=color)
+        ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
+        color = 'tab:cyan'
+        ax2.set_ylabel('Primary Throughput', color=color)  # we already handled the x-label with ax1
+        ax2.plot(range(0, num_Eps), np.mean(u_primary, axis=1), markersize='10', color='red')
+        ax2.tick_params(axis='y', labelcolor=color)
+        fig.tight_layout()  # otherwise the right y-label is slightly clipped
+        plt.grid(True)
+        plt.show(block=False)
+        plt.savefig('Throughput.png')
 
-            plt.figure()
-            plt.plot(range(0, num_Step), np.mean(task_diff, axis=1), markersize='10', color='blue')
-            plt.grid(True)
-            plt.ylabel('Number of Switch')
-            plt.xlabel('Steps')
-            # plt.savefig('first.png')
-            plt.show(block=False)
+        plt.figure()
+        plt.plot(range(0, num_Eps), np.mean(task_diff, axis=1), markersize='10', color='red')
+        plt.plot(range(0, num_Eps), np.mean(move_diff, axis=1), markersize='10', color='blue')
+        plt.grid(True)
+        plt.ylabel('Number of Switch-Movement')
+        plt.xlabel('Episodes')
+        plt.savefig('Number of Switch-Movement.png')
+        plt.show(block=False)
 
-            plt.figure()
-            plt.plot(range(0, num_Step), sum_utility, markersize='10', color='blue')
-            plt.grid(True)
-            plt.ylabel('Sum Utility')
-            plt.xlabel('Steps')
-            # plt.savefig('first.png')
-            plt.show(block=False)
-
-            plt.figure()
-            plt.plot(range(0, num_Step), np.mean(np.cumsum(reward, axis=0), axis=1), markersize='10', color='blue')
-            plt.grid(True)
-            plt.ylabel('Accumulative reward')
-            plt.xlabel('Steps')
-            # plt.savefig('first.png')
-            plt.show(block=False)
+        plt.figure()
+        plt.plot(range(0, num_Eps), num_Step, markersize='10', color='black')
+        plt.grid(True)
+        plt.ylabel('Steps')
+        plt.xlabel('Episodes')
+        plt.savefig('Steps per Episodes.png')
+        plt.show(block=False)
 
     outputFile = '\data\Out_greedy_Size_%d_Run_%d_Eps_%d_Step_%d.npz' % (Size, Run, num_Eps, num_Step)  # Windows
 
@@ -269,4 +270,4 @@ for Run in range(0, num_Run):
     
     # End of the Each Run
 
-seed(1)
+# seed(1)
